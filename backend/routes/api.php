@@ -87,26 +87,28 @@ Route::prefix('v1')->group(function () {
             Route::get('/reports/applications', [ReportController::class, 'applications']);
             Route::get('/reports/hiring-funnel', [ReportController::class, 'hiringFunnel']);
 
-            // Read-only access needed by ApplicationDetail
+            // Read-only access needed by forms and dropdowns
             Route::get('/email-templates', [EmailTemplateController::class, 'index']);
             Route::get('/users', [UserController::class, 'index']);
+            Route::get('/departments', [DepartmentController::class, 'index']);
         });
 
         // SA only routes
         Route::middleware('role:super_admin')->group(function () {
 
-            // Departments
-            Route::apiResource('departments', DepartmentController::class);
+            // Departments (list đã có trong shared group, SA thêm CRUD)
+            Route::apiResource('departments', DepartmentController::class)->except(['index']);
 
-            // Users
-            Route::apiResource('users', UserController::class);
+            // Users (list đã có trong shared group, SA thêm CRUD)
+            Route::apiResource('users', UserController::class)->except(['index']);
             Route::post('/users/{id}/reset-password', [UserController::class, 'resetPassword']);
 
-            // Email Templates
-            Route::apiResource('email-templates', EmailTemplateController::class);
+            // Email Templates (list đã có trong shared group, SA thêm CRUD)
+            Route::apiResource('email-templates', EmailTemplateController::class)->except(['index']);
 
             // Activity Logs
             Route::get('/activity-logs', [ActivityLogController::class, 'index']);
+            Route::get('/activity-logs/users', [ActivityLogController::class, 'users']);
         });
     });
 });

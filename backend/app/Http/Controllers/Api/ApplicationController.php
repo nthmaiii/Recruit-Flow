@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\Application;
 use App\Models\ApplicationNote;
 use App\Models\ApplicationStatusHistory;
@@ -163,6 +164,16 @@ class ApplicationController extends Controller
             ));
         }
 
+        ActivityLog::log([
+            'user_id' => $user->id,
+            'action' => 'application.status_changed',
+            'model_type' => 'Application',
+            'model_id' => $application->id,
+            'old_values' => ['status' => $oldStatus],
+            'new_values' => ['status' => $newStatus],
+            'ip_address' => $request->ip(),
+        ]);
+
         try { broadcast(new ApplicationStatusChangedEvent($application->fresh()->load(['job', 'candidate'])))->toOthers(); } catch (\Exception) {}
 
         return response()->json($application->fresh()->load(['job', 'candidate', 'statusHistory.changedBy']));
@@ -214,6 +225,13 @@ class ApplicationController extends Controller
                 }
             }
         });
+
+        ActivityLog::log([
+            'user_id' => $user->id,
+            'action' => 'application.bulk_reject',
+            'new_values' => ['count' => count($request->application_ids), 'reason' => $request->reason],
+            'ip_address' => $request->ip(),
+        ]);
 
         return response()->json(['message' => 'Applications rejected successfully']);
     }
@@ -320,6 +338,15 @@ class ApplicationController extends Controller
             $request->template_code,
             $request->custom_message
         ));
+
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'application.send_email',
+            'model_type' => 'Application',
+            'model_id' => $application->id,
+            'new_values' => ['template_code' => $request->template_code],
+            'ip_address' => $request->ip(),
+        ]);
 
         return response()->json(['message' => 'Email queued successfully']);
     }

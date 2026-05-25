@@ -98,14 +98,21 @@ export default function ApplicationDetail() {
     queryFn: () => applicationsApi.get(Number(id)).then((r) => r.data as Application),
   })
 
+  const isHR = user?.role === 'hr' || user?.role === 'super_admin'
+  const isHMRole = user?.role === 'hiring_manager'
+
   const { data: emailTemplates } = useQuery({
     queryKey: ['email-templates'],
     queryFn: () => client.get('/email-templates').then((r) => r.data),
+    enabled: isHR,
+    retry: false,
   })
 
   const { data: users } = useQuery({
     queryKey: ['users', { role: 'hiring_manager' }],
     queryFn: () => client.get('/users', { params: { role: 'hiring_manager' } }).then((r) => r.data.data),
+    enabled: isHR,
+    retry: false,
   })
 
   const { data: onboardingTasks } = useQuery({
@@ -194,8 +201,12 @@ export default function ApplicationDetail() {
           {t('applications.backToList')}
         </button>
         <div className="flex gap-3">
-          <button onClick={() => setShowEmailModal(true)} className="btn-secondary">{t('applications.sendEmail')}</button>
-          <button onClick={() => setShowInterviewModal(true)} className="btn-secondary">{t('applications.scheduleInterview')}</button>
+          {isHR && (
+            <button onClick={() => setShowEmailModal(true)} className="btn-secondary">{t('applications.sendEmail')}</button>
+          )}
+          {isHR && (
+            <button onClick={() => setShowInterviewModal(true)} className="btn-secondary">{t('applications.scheduleInterview')}</button>
+          )}
           <button
             onClick={() => { setShowStatusModal(true); setNewStatus('') }}
             className="btn-primary"
@@ -211,12 +222,12 @@ export default function ApplicationDetail() {
       <div className="card">
         <div className="flex items-start justify-between mb-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">{app.candidate?.full_name}</h1>
-            <div className="text-gray-500">{app.candidate?.email} · {app.candidate?.phone}</div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{app.candidate?.full_name}</h1>
+            <div className="text-gray-500 dark:text-gray-400">{app.candidate?.email} · {app.candidate?.phone}</div>
           </div>
           <StatusBadge status={app.status} />
         </div>
-        <div className="grid grid-cols-3 gap-4 text-sm">
+        <div className="grid grid-cols-3 gap-4 text-sm dark:text-gray-200">
           <div><span className="text-gray-500">{t('applications.applied')}:</span> <span className="font-medium">{app.job?.title}</span></div>
           <div><span className="text-gray-500">{t('applications.dept')}:</span> {app.job?.department?.name}</div>
           <div><span className="text-gray-500">{t('applications.applied')}:</span> {format(new Date(app.created_at), 'dd/MM/yyyy')}</div>
@@ -237,6 +248,10 @@ export default function ApplicationDetail() {
                     a.download = app.cv_original_name || 'cv.pdf'
                     a.click()
                     URL.revokeObjectURL(url)
+                    if (app.status === 'new') {
+                      applicationsApi.changeStatus(Number(id), 'reviewing', 'Đã xem CV')
+                        .then(() => queryClient.invalidateQueries({ queryKey: ['application', id] }))
+                    }
                   })
               }}
             >
@@ -254,7 +269,7 @@ export default function ApplicationDetail() {
           )}
         </div>
         {app.cover_letter && (
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg text-sm text-gray-700">
+          <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200">
             <div className="font-medium mb-1">{t('applications.coverLetter')}</div>
             {app.cover_letter}
           </div>
@@ -386,7 +401,7 @@ export default function ApplicationDetail() {
             <p className="text-sm text-gray-500">{t('applications.noNotes')}</p>
           )}
           {app.notes?.map((note) => (
-            <div key={note.id} className={`p-3 rounded-lg text-sm ${note.is_private ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'}`}>
+            <div key={note.id} className={`p-3 rounded-lg text-sm dark:text-gray-200 ${note.is_private ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800' : 'bg-gray-50 dark:bg-gray-700'}`}>
               <div className="flex items-center gap-2 mb-1">
                 <span className="font-medium">{note.user?.name}</span>
                 {note.is_private && <span className="badge bg-yellow-100 text-yellow-700 text-xs">{t('applications.internal')}</span>}
@@ -431,7 +446,7 @@ export default function ApplicationDetail() {
                 </div>
                 <div className="space-y-2">
                   {catTasks.map((task: OnboardingTask) => (
-                    <div key={task.id} className={`flex items-center gap-3 p-2 rounded-lg ${task.is_completed ? 'bg-green-50' : 'bg-gray-50'}`}>
+                    <div key={task.id} className={`flex items-center gap-3 p-2 rounded-lg ${task.is_completed ? 'bg-green-50 dark:bg-green-900/20' : 'bg-gray-50 dark:bg-gray-700'}`}>
                       <input
                         type="checkbox"
                         checked={task.is_completed}
@@ -486,8 +501,8 @@ export default function ApplicationDetail() {
       {/* Modal: Update Status */}
       {showStatusModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-semibold mb-4">{t('applications.statusModalTitle')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-semibold mb-4 dark:text-white">{t('applications.statusModalTitle')}</h2>
             {availableTransitions.length === 0 ? (
               <p className="text-sm text-gray-500 mb-4">
                 {t('applications.noTransition', { status: STATUS_LABELS[app.status] ?? app.status })}
@@ -534,8 +549,8 @@ export default function ApplicationDetail() {
       {/* Modal: Schedule Interview */}
       {showInterviewModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-semibold mb-4">{t('applications.interviewModalTitle')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-semibold mb-4 dark:text-white">{t('applications.interviewModalTitle')}</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -592,8 +607,8 @@ export default function ApplicationDetail() {
       {/* Modal: Interview Evaluation */}
       {showEvalModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-semibold mb-4">{t('applications.evalModalTitle')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-semibold mb-4 dark:text-white">{t('applications.evalModalTitle')}</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -651,8 +666,8 @@ export default function ApplicationDetail() {
       {/* Modal: Send Email */}
       {showEmailModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-xl">
-            <h2 className="text-lg font-semibold mb-4">{t('applications.emailModalTitle')}</h2>
+          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 w-full max-w-md shadow-xl">
+            <h2 className="text-lg font-semibold mb-4 dark:text-white">{t('applications.emailModalTitle')}</h2>
             <form
               onSubmit={(e) => {
                 e.preventDefault()

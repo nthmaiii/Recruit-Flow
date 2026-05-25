@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { applicationsApi } from '@/api/applications'
+import { jobsApi } from '@/api/jobs'
 import StatusBadge from '@/components/common/StatusBadge'
 import { format } from 'date-fns'
 import toast from 'react-hot-toast'
@@ -13,6 +14,7 @@ export default function ApplicationList() {
   const queryClient = useQueryClient()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
+  const [jobId, setJobId] = useState('')
   const [page, setPage] = useState(1)
   const [selected, setSelected] = useState<number[]>([])
   const [showRejectModal, setShowRejectModal] = useState(false)
@@ -29,9 +31,14 @@ export default function ApplicationList() {
     { value: 'rejected', label: t('status.rejected') },
   ]
 
+  const { data: jobsData } = useQuery({
+    queryKey: ['jobs-list-all'],
+    queryFn: () => jobsApi.list({ page: 1 }).then((r) => r.data.data ?? []),
+  })
+
   const { data, isLoading } = useQuery({
-    queryKey: ['applications', { search, status, page }],
-    queryFn: () => applicationsApi.list({ search, status, page }).then((r) => r.data),
+    queryKey: ['applications', { search, status, jobId, page }],
+    queryFn: () => applicationsApi.list({ search, status, job_id: jobId || undefined, page }).then((r) => r.data),
   })
 
   const bulkRejectMutation = useMutation({
@@ -94,6 +101,12 @@ export default function ApplicationList() {
             <option value="">{t('applications.allStatuses')}</option>
             {STATUS_OPTIONS.map((s) => (
               <option key={s.value} value={s.value}>{s.label}</option>
+            ))}
+          </select>
+          <select value={jobId} onChange={(e) => { setJobId(e.target.value); setPage(1) }} className="input w-56">
+            <option value="">Tất cả vị trí</option>
+            {(jobsData ?? []).map((j: any) => (
+              <option key={j.id} value={j.id}>{j.title}</option>
             ))}
           </select>
           {selected.length > 0 && (

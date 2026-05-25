@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -44,6 +45,13 @@ class AuthController extends Controller
         RateLimiter::clear($throttleKey);
         $token = $user->createToken('auth_token')->plainTextToken;
 
+        ActivityLog::log([
+            'user_id' => $user->id,
+            'action' => 'user.login',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
+
         return response()->json([
             'token' => $token,
             'user' => $user->load('department'),
@@ -53,7 +61,14 @@ class AuthController extends Controller
 
     public function logout(Request $request)
     {
+        $userId = $request->user()->id;
         $request->user()->currentAccessToken()->delete();
+        ActivityLog::log([
+            'user_id' => $userId,
+            'action' => 'user.logout',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+        ]);
         return response()->json(['message' => 'Logged out successfully']);
     }
 
@@ -95,6 +110,13 @@ class AuthController extends Controller
         $user->update([
             'password' => Hash::make($request->password),
             'must_change_password' => false,
+        ]);
+
+        ActivityLog::log([
+            'user_id' => $user->id,
+            'action' => 'user.change_password',
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
         ]);
 
         return response()->json(['message' => 'Password changed successfully']);

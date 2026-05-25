@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
+use App\Models\AppNotification;
 use App\Models\Job;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class JobController extends Controller
@@ -65,6 +68,32 @@ class JobController extends Controller
 
         $job = Job::create($validated);
 
+        ActivityLog::log([
+            'user_id' => $user->id,
+            'action' => 'job.create',
+            'model_type' => 'Job',
+            'model_id' => $job->id,
+            'new_values' => ['title' => $job->title, 'status' => $job->status],
+            'ip_address' => $request->ip(),
+        ]);
+
+        if ($job->status === Job::STATUS_PENDING_APPROVAL) {
+            $hrSaIds = User::whereIn('role', ['super_admin', 'hr'])->pluck('id');
+            foreach ($hrSaIds as $userId) {
+                try {
+                    \Illuminate\Support\Facades\DB::table('notifications')->insert([
+                        'user_id'    => $userId,
+                        'type'       => 'job_pending_approval',
+                        'title'      => 'Tin tuyển dụng chờ duyệt',
+                        'message'    => "{$user->name} đã tạo tin tuyển dụng \"{$job->title}\" cần phê duyệt.",
+                        'data'       => json_encode(['job_id' => $job->id]),
+                        'is_read'    => 0,
+                        'created_at' => now(),
+                    ]);
+                } catch (\Throwable) {}
+            }
+        }
+
         return response()->json($job->load(['department', 'creator']), 201);
     }
 
@@ -118,6 +147,15 @@ class JobController extends Controller
 
         $job->update($validated);
 
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'job.update',
+            'model_type' => 'Job',
+            'model_id' => $job->id,
+            'new_values' => $validated,
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json($job->fresh()->load(['department', 'creator']));
     }
 
@@ -128,6 +166,15 @@ class JobController extends Controller
         if ($job->hasApplications()) {
             return response()->json(['message' => 'Không thể xóa tin đã có hồ sơ ứng tuyển'], 422);
         }
+
+        ActivityLog::log([
+            'user_id' => request()->user()->id,
+            'action' => 'job.delete',
+            'model_type' => 'Job',
+            'model_id' => $job->id,
+            'old_values' => ['title' => $job->title],
+            'ip_address' => request()->ip(),
+        ]);
 
         $job->delete();
 
@@ -148,6 +195,15 @@ class JobController extends Controller
             'approval_note' => null,
         ]);
 
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'job.approve',
+            'model_type' => 'Job',
+            'model_id' => $job->id,
+            'new_values' => ['title' => $job->title],
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json($job->fresh()->load(['department', 'creator']));
     }
 
@@ -166,6 +222,15 @@ class JobController extends Controller
             'approval_note' => $request->note,
         ]);
 
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'job.reject_approval',
+            'model_type' => 'Job',
+            'model_id' => $job->id,
+            'new_values' => ['title' => $job->title, 'note' => $request->note],
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json($job->fresh()->load(['department', 'creator']));
     }
 
@@ -182,6 +247,16 @@ class JobController extends Controller
         $newJob->approval_note = null;
         $newJob->save();
 
+        ActivityLog::log([
+            'user_id' => request()->user()->id,
+            'action' => 'job.copy',
+            'model_type' => 'Job',
+            'model_id' => $newJob->id,
+            'old_values' => ['source_job_id' => $job->id, 'source_title' => $job->title],
+            'new_values' => ['title' => $newJob->title],
+            'ip_address' => request()->ip(),
+        ]);
+
         return response()->json($newJob->load(['department', 'creator']), 201);
     }
 
@@ -189,6 +264,15 @@ class JobController extends Controller
     {
         $job = Job::findOrFail($id);
         $job->update(['status' => Job::STATUS_CLOSED]);
+
+        ActivityLog::log([
+            'user_id' => request()->user()->id,
+            'action' => 'job.close',
+            'model_type' => 'Job',
+            'model_id' => $job->id,
+            'new_values' => ['title' => $job->title],
+            'ip_address' => request()->ip(),
+        ]);
 
         return response()->json($job->fresh());
     }

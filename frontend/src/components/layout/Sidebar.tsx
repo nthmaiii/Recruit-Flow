@@ -7,6 +7,7 @@ const allNavItems = [
   { key: 'nav.dashboard', path: '/dashboard', roles: ['super_admin', 'hr', 'hiring_manager'] },
   { key: 'nav.jobs', path: '/jobs', roles: ['super_admin', 'hr', 'hiring_manager'] },
   { key: 'nav.applications', path: '/applications', roles: ['super_admin', 'hr', 'hiring_manager'] },
+  { key: 'nav.interviews', path: '/interviews', roles: ['super_admin', 'hr', 'hiring_manager'] },
   { key: 'nav.users', path: '/users', roles: ['super_admin'] },
   { key: 'nav.departments', path: '/departments', roles: ['super_admin'] },
   { key: 'nav.emailTemplates', path: '/email-templates', roles: ['super_admin'] },

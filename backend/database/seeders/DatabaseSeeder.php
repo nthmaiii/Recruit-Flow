@@ -23,24 +23,24 @@ class DatabaseSeeder extends Seeder
         // Super Admin
         $sa = User::create([
             'name' => 'Super Admin',
-            'email' => 'admin@recruitflow.local',
-            'password' => Hash::make('password'),
+            'email' => 'admin@recruitflow.com',
+            'password' => Hash::make('Admin@123'),
             'role' => User::ROLE_SA,
         ]);
 
         // HR users
         $hr1 = User::create([
             'name' => 'HR Manager',
-            'email' => 'hr@recruitflow.local',
-            'password' => Hash::make('password'),
+            'email' => 'hr1@recruitflow.com',
+            'password' => Hash::make('HR@123456'),
             'role' => User::ROLE_HR,
             'department_id' => $hrDept->id,
         ]);
 
         $hr2 = User::create([
             'name' => 'HR Staff',
-            'email' => 'hr2@recruitflow.local',
-            'password' => Hash::make('password'),
+            'email' => 'hr2@recruitflow.com',
+            'password' => Hash::make('HR@123456'),
             'role' => User::ROLE_HR,
             'department_id' => $hrDept->id,
         ]);
@@ -48,16 +48,16 @@ class DatabaseSeeder extends Seeder
         // Hiring Managers
         $hm1 = User::create([
             'name' => 'Tech Lead',
-            'email' => 'hm@recruitflow.local',
-            'password' => Hash::make('password'),
+            'email' => 'hm.it@recruitflow.com',
+            'password' => Hash::make('HM@123456'),
             'role' => User::ROLE_HM,
             'department_id' => $techDept->id,
         ]);
 
         $hm2 = User::create([
             'name' => 'Product Manager',
-            'email' => 'hm2@recruitflow.local',
-            'password' => Hash::make('password'),
+            'email' => 'hm.eng@recruitflow.com',
+            'password' => Hash::make('HM@123456'),
             'role' => User::ROLE_HM,
             'department_id' => $techDept->id,
         ]);
@@ -66,8 +66,18 @@ class DatabaseSeeder extends Seeder
         $techDept->update(['manager_id' => $hm1->id]);
         $hrDept->update(['manager_id' => $hr1->id]);
 
-        // Email Templates
-        EmailTemplate::insert([
+        // Email Templates — dùng upsert để không bao giờ bị lỗi duplicate
+        EmailTemplate::upsert([
+            [
+                'name' => 'Thông báo tuyển dụng thành công',
+                'code' => 'offer_letter',
+                'subject' => 'Chúc mừng! Bạn đã được tuyển dụng - {job_title}',
+                'body' => '<p>Kính gửi <strong>{candidate_name}</strong>,</p><p>Chúng tôi rất vui mừng thông báo rằng bạn đã <strong>vượt qua vòng phỏng vấn</strong> và được chính thức nhận vào vị trí <strong>{job_title}</strong> tại <strong>{company_name}</strong>.</p><p>Để hoàn tất thủ tục nhận việc, vui lòng liên hệ HR qua: <strong>Zalo: 0901 234 567</strong></p><p>Trân trọng,<br><strong>{company_name}</strong></p>',
+                'variables' => json_encode(['candidate_name', 'job_title', 'company_name']),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
             [
                 'name' => 'Application Received',
                 'code' => 'application_received',
@@ -82,18 +92,8 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Interview Invitation',
                 'code' => 'interview_invitation',
                 'subject' => 'Thư mời phỏng vấn - {job_title}',
-                'body' => '<p>Kính gửi {candidate_name},</p><p>Chúng tôi trân trọng mời bạn tham dự buổi phỏng vấn cho vị trí <strong>{job_title}</strong> tại <strong>{company_name}</strong>.</p><h3 style="margin:16px 0 8px">Thông tin lịch phỏng vấn:</h3><table style="border-collapse:collapse;width:100%"><tr><td style="padding:6px 0;color:#666;width:140px">📅 Thời gian:</td><td style="padding:6px 0;font-weight:bold">{interview_date}</td></tr><tr><td style="padding:6px 0;color:#666">⏱ Thời lượng:</td><td style="padding:6px 0">{interview_duration}</td></tr><tr><td style="padding:6px 0;color:#666">📍 Hình thức:</td><td style="padding:6px 0">{interview_type}</td></tr><tr><td style="padding:6px 0;color:#666">🏢 Địa điểm:</td><td style="padding:6px 0">{interview_location}</td></tr><tr><td style="padding:6px 0;color:#666">🔗 Link họp:</td><td style="padding:6px 0"><a href="{meeting_link}">{meeting_link}</a></td></tr></table>{custom_message}<p style="margin-top:20px">Vui lòng <strong>xác nhận tham dự hoặc từ chối</strong> lịch phỏng vấn bằng cách nhấn nút bên dưới:</p><p><a href="{confirmation_link}" style="display:inline-block;background:#2563eb;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:bold">Xác nhận / Từ chối lịch phỏng vấn</a></p><p>Trân trọng,<br><strong>{company_name}</strong></p>',
-                'variables' => json_encode(['candidate_name', 'job_title', 'company_name', 'interview_date', 'interview_duration', 'interview_type', 'interview_location', 'meeting_link', 'confirmation_link', 'custom_message']),
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Offer Letter',
-                'code' => 'offer_letter',
-                'subject' => 'Job Offer - {job_title}',
-                'body' => '<p>Dear {candidate_name},</p><p>Congratulations! We are delighted to offer you the position of <strong>{job_title}</strong>.</p><p>{custom_message}</p><p>Best regards,<br>{company_name}</p>',
-                'variables' => json_encode(['candidate_name', 'job_title', 'company_name', 'custom_message']),
+                'body' => '<p>Kính gửi {candidate_name},</p><p>Chúng tôi trân trọng mời bạn tham dự phỏng vấn vị trí <strong>{job_title}</strong>.</p>',
+                'variables' => json_encode(['candidate_name', 'job_title', 'company_name']),
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -102,18 +102,8 @@ class DatabaseSeeder extends Seeder
                 'name' => 'Rejection Notice',
                 'code' => 'rejection',
                 'subject' => 'Update on your application for {job_title}',
-                'body' => '<p>Dear {candidate_name},</p><p>Thank you for your interest in the <strong>{job_title}</strong> position. After careful consideration, we have decided to move forward with other candidates.</p><p>We wish you the best in your job search.</p><p>Best regards,<br>{company_name}</p>',
+                'body' => '<p>Dear {candidate_name},</p><p>Thank you for your interest in <strong>{job_title}</strong>. We have decided to move forward with other candidates.</p><p>Best regards,<br>{company_name}</p>',
                 'variables' => json_encode(['candidate_name', 'job_title', 'company_name']),
-                'is_active' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'name' => 'Welcome / Hired',
-                'code' => 'hired',
-                'subject' => 'Welcome to {company_name}!',
-                'body' => '<p>Dear {candidate_name},</p><p>We are thrilled to welcome you to the team! Your journey at <strong>{company_name}</strong> begins now.</p><p>Best regards,<br>{company_name} HR Team</p>',
-                'variables' => json_encode(['candidate_name', 'company_name']),
                 'is_active' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -128,7 +118,7 @@ class DatabaseSeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
-        ]);
+        ], ['code'], ['name', 'subject', 'body', 'variables', 'is_active', 'updated_at']);
 
         // Jobs
         $job1 = Job::create([
@@ -182,23 +172,6 @@ class DatabaseSeeder extends Seeder
             'vacancies' => 1,
         ]);
 
-        $job4 = Job::create([
-            'title' => 'Mobile Developer (Flutter)',
-            'slug' => 'mobile-developer-flutter',
-            'department_id' => $techDept->id,
-            'created_by' => $hr1->id,
-            'description' => 'Build cross-platform mobile applications.',
-            'requirements' => '2+ years Flutter development.',
-            'benefits' => null,
-            'location' => 'Ho Chi Minh City',
-            'type' => 'full_time',
-            'level' => 'junior',
-            'salary_min' => 1000,
-            'salary_max' => 1800,
-            'status' => 'draft',
-            'vacancies' => 2,
-        ]);
-
         // Candidates
         $candidates = [
             ['full_name' => 'Nguyen Van A', 'email' => 'nguyenvana@example.com', 'phone' => '0901234567'],
@@ -211,13 +184,13 @@ class DatabaseSeeder extends Seeder
 
         $createdCandidates = collect($candidates)->map(fn($c) => Candidate::create($c));
 
-        // Applications with varied statuses
+        // Applications
         $applications = [
             ['job_id' => $job1->id, 'candidate_id' => $createdCandidates[0]->id, 'status' => 'new'],
             ['job_id' => $job1->id, 'candidate_id' => $createdCandidates[1]->id, 'status' => 'reviewing'],
             ['job_id' => $job1->id, 'candidate_id' => $createdCandidates[2]->id, 'status' => 'interview_scheduled'],
             ['job_id' => $job2->id, 'candidate_id' => $createdCandidates[3]->id, 'status' => 'interviewed'],
-            ['job_id' => $job2->id, 'candidate_id' => $createdCandidates[4]->id, 'status' => 'offer_sent'],
+            ['job_id' => $job2->id, 'candidate_id' => $createdCandidates[4]->id, 'status' => 'interviewed'],
             ['job_id' => $job3->id, 'candidate_id' => $createdCandidates[5]->id, 'status' => 'hired'],
         ];
 

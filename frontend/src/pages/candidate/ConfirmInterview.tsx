@@ -39,7 +39,7 @@ export default function ConfirmInterview() {
 
   if (error || !data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="card max-w-md text-center">
           <div className="text-4xl mb-4">🔗</div>
           <h2 className="text-xl font-bold text-red-600 mb-2">Link không hợp lệ</h2>
@@ -51,7 +51,7 @@ export default function ConfirmInterview() {
 
   if (responded) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="card max-w-md text-center">
           <div className={`text-5xl mb-4 ${action === 'confirm' ? 'text-green-600' : 'text-red-500'}`}>
             {action === 'confirm' ? '✓' : '✗'}
@@ -72,7 +72,7 @@ export default function ConfirmInterview() {
   const interview = data.interview
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center py-12">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center py-12">
       <div className="max-w-md w-full px-4">
         <div className="card">
           <div className="text-center mb-6">

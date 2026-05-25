@@ -75,7 +75,7 @@ export default function EmailTemplates() {
                     <span className="ml-2 text-xs text-gray-400 font-mono">({template.code})</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className={`badge ${template.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`badge ${template.is_active ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300' : 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300'}`}>
                       {template.is_active ? t('admin.emailTemplates.active') : t('admin.emailTemplates.inactive')}
                     </span>
                     <button onClick={() => setEditing(template)} className="text-blue-600 text-sm hover:underline">{t('admin.emailTemplates.edit')}</button>
@@ -86,7 +86,7 @@ export default function EmailTemplates() {
                 </div>
                 {template.variables && (
                   <div className="text-xs text-gray-400 mt-1">
-                    {t('admin.emailTemplates.variables')}: {template.variables.map((v) => <code key={v} className="bg-gray-100 px-1 rounded mr-1">{`{${v}}`}</code>)}
+                    {t('admin.emailTemplates.variables')}: {template.variables.map((v) => <code key={v} className="bg-gray-100 dark:bg-gray-700 dark:text-gray-200 px-1 rounded mr-1">{`{${v}}`}</code>)}
                   </div>
                 )}
               </div>

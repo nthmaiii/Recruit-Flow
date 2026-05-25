@@ -26,6 +26,7 @@ export default function JobForm() {
   const { data: departments } = useQuery({
     queryKey: ['departments'],
     queryFn: () => client.get('/departments').then((r) => r.data),
+    enabled: !isHM,
   })
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm()
@@ -88,7 +89,7 @@ export default function JobForm() {
             <div>
               <label className="form-label">{t('jobs.departmentField')} *</label>
               <select
-                {...register('department_id', { required: t('common.required') })}
+                {...register('department_id', { required: isHM ? false : t('common.required') })}
                 disabled={hasApplications || isHM}
                 className="input disabled:bg-gray-100"
               >
@@ -148,7 +149,7 @@ export default function JobForm() {
             </div>
 
             <div>
-              <label className="form-label">{t('jobs.vacancies')}</label>
+              <label className="form-label">{t('jobs.vacancies')} <span className="text-red-500">*</span></label>
               <input {...register('vacancies')} type="number" min="1" className="input" />
             </div>
 

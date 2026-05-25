@@ -17,12 +17,13 @@ import UserManagement from '@/pages/admin/UserManagement'
 import DepartmentManagement from '@/pages/admin/DepartmentManagement'
 import EmailTemplates from '@/pages/admin/EmailTemplates'
 import ActivityLogs from '@/pages/admin/ActivityLogs'
+import MyInterviews from '@/pages/interviews/MyInterviews'
 import ApplyForm from '@/pages/candidate/ApplyForm'
 import CandidatePortal from '@/pages/candidate/CandidatePortal'
 import ConfirmInterview from '@/pages/candidate/ConfirmInterview'
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30000 } },
+  defaultOptions: { queries: { retry: false, staleTime: 30000 } },
 })
 
 function ProtectedRoute({ children, roles }: { children: React.ReactNode; roles?: string[] }) {
@@ -57,7 +58,11 @@ function AppInit({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  if (!ready) return null
+  if (!ready) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <div className="animate-spin rounded-full h-10 w-10 border-4 border-blue-600 border-t-transparent" />
+    </div>
+  )
   return <>{children}</>
 }
 
@@ -96,6 +101,9 @@ export default function App() {
             {/* Applications */}
             <Route path="applications" element={<ApplicationList />} />
             <Route path="applications/:id" element={<ApplicationDetail />} />
+
+            {/* Interviews */}
+            <Route path="interviews" element={<MyInterviews />} />
 
             {/* Admin only */}
             <Route

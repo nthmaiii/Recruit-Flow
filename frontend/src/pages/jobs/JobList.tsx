@@ -9,10 +9,10 @@ import { format } from 'date-fns'
 import ConfirmDialog from '@/components/common/ConfirmDialog'
 
 const JOB_STATUS_COLORS: Record<string, string> = {
-  published: 'bg-green-100 text-green-700',
-  draft: 'bg-gray-100 text-gray-700',
-  closed: 'bg-red-100 text-red-700',
-  pending_approval: 'bg-yellow-100 text-yellow-700',
+  published: 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+  draft: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  closed: 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+  pending_approval: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
 }
 
 type ConfirmState = {

@@ -18,7 +18,9 @@ client.interceptors.response.use(
     if (error.response?.status === 401) {
       localStorage.removeItem('auth_token')
       window.location.href = '/login'
-    } else if (error.response?.status === 403) {
+    } else if (error.response?.status === 403 && error.config?.method !== 'get') {
+      // Chỉ hiện toast 403 khi user chủ động thực hiện hành động (POST/PUT/DELETE)
+      // GET là background data query, thất bại thì im lặng
       toast.error('Bạn không có quyền thực hiện thao tác này.')
     } else if (error.response?.status >= 500) {
       toast.error('Lỗi server. Vui lòng thử lại sau.')

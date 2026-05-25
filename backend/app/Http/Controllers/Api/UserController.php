@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ActivityLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -41,6 +42,15 @@ class UserController extends Controller
             'must_change_password' => true,
         ]));
 
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'user.create',
+            'model_type' => 'User',
+            'model_id' => $user->id,
+            'new_values' => ['email' => $user->email, 'role' => $user->role],
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json([
             'user' => $user->load('department'),
             'temp_password' => $tempPassword,
@@ -67,6 +77,15 @@ class UserController extends Controller
 
         $user->update($validated);
 
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'user.update',
+            'model_type' => 'User',
+            'model_id' => $user->id,
+            'new_values' => $validated,
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json($user->fresh()->load('department'));
     }
 
@@ -77,6 +96,15 @@ class UserController extends Controller
         if ($user->id === request()->user()->id) {
             return response()->json(['message' => 'Cannot delete your own account'], 422);
         }
+
+        ActivityLog::log([
+            'user_id' => request()->user()->id,
+            'action' => 'user.delete',
+            'model_type' => 'User',
+            'model_id' => $user->id,
+            'old_values' => ['email' => $user->email, 'role' => $user->role],
+            'ip_address' => request()->ip(),
+        ]);
 
         $user->delete();
 
@@ -91,6 +119,14 @@ class UserController extends Controller
         $user->update([
             'password' => Hash::make($tempPassword),
             'must_change_password' => true,
+        ]);
+
+        ActivityLog::log([
+            'user_id' => request()->user()->id,
+            'action' => 'user.reset_password',
+            'model_type' => 'User',
+            'model_id' => $user->id,
+            'ip_address' => request()->ip(),
         ]);
 
         return response()->json(['temp_password' => $tempPassword]);

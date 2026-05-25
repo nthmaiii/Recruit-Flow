@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/store/authStore'
@@ -15,6 +15,17 @@ export default function Header() {
   const { isDark, toggle: toggleTheme } = useThemeStore()
   const [showNotifs, setShowNotifs] = useState(false)
   const [showMenu, setShowMenu] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
+  const notifsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setShowMenu(false)
+      if (notifsRef.current && !notifsRef.current.contains(e.target as Node)) setShowNotifs(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const handleLogout = async () => {
     try { await authApi.logout() } finally {
@@ -41,7 +52,7 @@ export default function Header() {
 
       <div className="flex items-center gap-3">
         {/* Notification Bell */}
-        <div className="relative">
+        <div className="relative" ref={notifsRef}>
           <button
             onClick={() => { setShowNotifs(!showNotifs); setShowMenu(false) }}
             className="relative p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -85,7 +96,7 @@ export default function Header() {
         </div>
 
         {/* User Menu */}
-        <div className="relative">
+        <div className="relative" ref={menuRef}>
           <button
             onClick={() => { setShowMenu(!showMenu); setShowNotifs(false) }}
             className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
@@ -156,7 +167,7 @@ export default function Header() {
                 </div>
                 <div className="flex gap-1 ml-7">
                   <button
-                    onClick={() => !isDark && toggleTheme()}
+                    onClick={() => isDark && toggleTheme()}
                     className={`flex-1 py-1 text-xs rounded-md font-medium transition-colors ${
                       !isDark
                         ? 'bg-blue-600 text-white'
@@ -166,7 +177,7 @@ export default function Header() {
                     ☀️ Sáng
                   </button>
                   <button
-                    onClick={() => isDark && toggleTheme()}
+                    onClick={() => !isDark && toggleTheme()}
                     className={`flex-1 py-1 text-xs rounded-md font-medium transition-colors ${
                       isDark
                         ? 'bg-blue-600 text-white'

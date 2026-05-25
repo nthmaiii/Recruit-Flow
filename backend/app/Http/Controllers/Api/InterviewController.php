@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Events\InterviewConfirmedEvent;
+use App\Models\ActivityLog;
 use App\Models\AppNotification;
 use App\Models\Interview;
 use App\Models\InterviewEvaluation;
@@ -75,6 +76,19 @@ class InterviewController extends Controller
             'confirmation_token' => $token,
         ]));
 
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'interview.schedule',
+            'model_type' => 'Interview',
+            'model_id' => $interview->id,
+            'new_values' => [
+                'application_id' => $interview->application_id,
+                'scheduled_at' => $interview->scheduled_at,
+                'type' => $interview->type,
+            ],
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json($interview->load(['interviewer', 'application.candidate']), 201);
     }
 
@@ -120,6 +134,15 @@ class InterviewController extends Controller
 
         $interview->update($validated);
 
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'interview.update',
+            'model_type' => 'Interview',
+            'model_id' => $interview->id,
+            'new_values' => $validated,
+            'ip_address' => $request->ip(),
+        ]);
+
         return response()->json($interview->fresh()->load(['interviewer', 'application.candidate']));
     }
 
@@ -145,6 +168,15 @@ class InterviewController extends Controller
 
         $interview->update(['status' => 'completed']);
         $interview->application->recalculateRating();
+
+        ActivityLog::log([
+            'user_id' => $request->user()->id,
+            'action' => 'interview.evaluate',
+            'model_type' => 'Interview',
+            'model_id' => $interview->id,
+            'new_values' => ['result' => $request->result, 'overall_score' => $request->overall_score],
+            'ip_address' => $request->ip(),
+        ]);
 
         return response()->json($evaluation->load('evaluator'));
     }

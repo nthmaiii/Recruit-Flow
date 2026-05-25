@@ -3,7 +3,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { useTranslation } from 'react-i18next'
 import client from '@/api/client'
 import StatusBadge from '@/components/common/StatusBadge'
-import { format } from 'date-fns'
+import { format, subDays } from 'date-fns'
 
 export default function HRDashboard() {
   const { t } = useTranslation()
@@ -19,6 +19,14 @@ export default function HRDashboard() {
     status: t(`status.${status}`, { defaultValue: status }),
     count,
   }))
+
+  const trendData = (() => {
+    const apiMap = new Map((data?.trend ?? []).map((d: any) => [d.date, d.count]))
+    return Array.from({ length: 30 }, (_, i) => {
+      const date = format(subDays(new Date(), 29 - i), 'yyyy-MM-dd')
+      return { date: format(subDays(new Date(), 29 - i), 'dd/MM'), count: apiMap.get(date) ?? 0 }
+    })
+  })()
 
   return (
     <div className="space-y-6">
@@ -62,7 +70,7 @@ export default function HRDashboard() {
         <div className="card">
           <h2 className="font-semibold text-gray-900 mb-4">{t('dashboard.trend30Days')}</h2>
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={data?.trend ?? []}>
+            <LineChart data={trendData}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="date" tick={{ fontSize: 11 }} />
               <YAxis />
@@ -77,7 +85,7 @@ export default function HRDashboard() {
         <h2 className="font-semibold text-gray-900 mb-4">{t('dashboard.needsAction')}</h2>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 dark:bg-gray-700/50">
               <tr>
                 <th className="table-header">{t('applications.candidate')}</th>
                 <th className="table-header">{t('applications.position')}</th>
@@ -87,7 +95,7 @@ export default function HRDashboard() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {data?.needs_action?.map((app: any) => (
-                <tr key={app.id} className="hover:bg-gray-50">
+                <tr key={app.id} className="hover:bg-gray-50 dark:hover:bg-gray-700/30">
                   <td className="table-cell font-medium">{app.candidate?.full_name}</td>
                   <td className="table-cell">{app.job?.title}</td>
                   <td className="table-cell"><StatusBadge status={app.status} /></td>

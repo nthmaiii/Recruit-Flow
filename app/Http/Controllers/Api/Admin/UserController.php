@@ -96,10 +96,22 @@ class UserController extends Controller
 
     public function activityLogs(Request $request): JsonResponse
     {
-        $logs = \App\Models\ActivityLog::with('user')
-            ->orderBy('created_at', 'desc')
-            ->paginate(30);
+        $query = ActivityLog::with('user')
+            ->orderBy('created_at', 'desc');
 
-        return response()->json($logs);
+        if ($request->filled('user_id')) {
+            $query->where('user_id', $request->user_id);
+        }
+        if ($request->filled('action')) {
+            $query->where('action', $request->action);
+        }
+        if ($request->filled('from_date')) {
+            $query->whereDate('created_at', '>=', $request->from_date);
+        }
+        if ($request->filled('to_date')) {
+            $query->whereDate('created_at', '<=', $request->to_date);
+        }
+
+        return response()->json($query->paginate(30));
     }
 }

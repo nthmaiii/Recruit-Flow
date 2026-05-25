@@ -9,6 +9,7 @@ const navItems = [
     { label: 'Quản lý User', href: '/admin/users', icon: '👥', roles: ['SA'] },
     { label: 'Bộ phận', href: '/admin/departments', icon: '🏢', roles: ['SA'] },
     { label: 'Template Email', href: '/admin/email-templates', icon: '✉️', roles: ['SA', 'HR'] },
+    { label: 'Nhật ký hoạt động', href: '/admin/activity-logs', icon: '📜', roles: ['SA'] },
 ];
 
 export default function Sidebar() {

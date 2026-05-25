@@ -17,6 +17,7 @@ import CandidatePortal from './pages/Candidate/CandidatePortal';
 import UserManagement from './pages/Admin/UserManagement';
 import DepartmentManagement from './pages/Admin/DepartmentManagement';
 import EmailTemplates from './pages/Admin/EmailTemplates';
+import ActivityLogs from './pages/Admin/ActivityLogs';
 import Reports from './pages/Reports/Reports';
 
 function PrivateRoute({ children, roles }) {
@@ -104,6 +105,9 @@ export default function AppRouter() {
                 } />
                 <Route path="admin/email-templates" element={
                     <PrivateRoute roles={['SA', 'HR']}><EmailTemplates /></PrivateRoute>
+                } />
+                <Route path="admin/activity-logs" element={
+                    <PrivateRoute roles={['SA']}><ActivityLogs /></PrivateRoute>
                 } />
             </Route>
 

@@ -37,7 +37,7 @@ export default function HMDashboard() {
         ) : (
           <div className="space-y-3">
             {data.upcoming_interviews.map((interview: any) => (
-              <div key={interview.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div key={interview.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
                 <div>
                   <div className="font-medium text-sm">{interview.application?.candidate?.full_name}</div>
                   <div className="text-xs text-gray-500">{interview.application?.job?.title}</div>
