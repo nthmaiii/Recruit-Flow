@@ -16,9 +16,11 @@ use App\Events\ApplicationStatusChangedEvent;
 use App\Events\InterviewScheduledEvent;
 use App\Jobs\SendEmailJob;
 use App\Jobs\SendBulkEmailJob;
+use App\Jobs\EvaluateApplicationJob;
 use App\Exports\ApplicationsExport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Maatwebsite\Excel\Facades\Excel;
 
@@ -112,6 +114,9 @@ class ApplicationController extends Controller
         ]);
 
         try { broadcast(new NewApplicationEvent($application->load(['job', 'candidate'])))->toOthers(); } catch (\Exception) {}
+
+        // Chạy đánh giá AI sau 5 giây (để queue worker sẵn sàng)
+        dispatch(new EvaluateApplicationJob($application->id))->delay(now()->addSeconds(5));
 
         return response()->json([
             'message' => 'Hồ sơ đã được nộp thành công.',
@@ -373,6 +378,44 @@ class ApplicationController extends Controller
         ]);
 
         return response()->json($note->load('user'), 201);
+    }
+
+    public function evaluate(Request $request, $id)
+    {
+        set_time_limit(120);
+
+        $application = Application::with('job')->findOrFail($id);
+
+        $user = $request->user();
+        if ($user->isHM() && $application->job->department_id !== $user->department_id) {
+            return response()->json(['message' => 'Không có quyền truy cập'], 403);
+        }
+
+        if (!config('services.gemini.api_key')) {
+            return response()->json(['message' => 'Chưa cấu hình GEMINI_API_KEY trong file .env của backend.'], 422);
+        }
+
+        try {
+            EvaluateApplicationJob::dispatchSync($application->id);
+        } catch (\Exception $e) {
+            Log::error('EvaluateApplicationJob sync failed: ' . $e->getMessage());
+            return response()->json(['message' => 'Lỗi gọi AI: ' . $e->getMessage()], 422);
+        }
+
+        $application->refresh();
+
+        if ($application->ai_score === null) {
+            return response()->json([
+                'message' => 'Gemini không phân tích được hồ sơ này (CV không hợp lệ hoặc API gặp sự cố). Kiểm tra log backend để biết thêm chi tiết.',
+            ], 422);
+        }
+
+        return response()->json([
+            'message'         => 'Đánh giá AI hoàn tất.',
+            'ai_score'        => $application->ai_score,
+            'ai_evaluation'   => $application->ai_evaluation,
+            'ai_evaluated_at' => $application->ai_evaluated_at,
+        ]);
     }
 
     public function downloadCv(Request $request, $id)

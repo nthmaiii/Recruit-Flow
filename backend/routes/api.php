@@ -68,6 +68,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/applications/{id}/notes', [ApplicationController::class, 'addNote']);
             Route::get('/applications/{id}/notes', [ApplicationController::class, 'getNotes']);
             Route::get('/applications/{id}/cv', [ApplicationController::class, 'downloadCv']);
+            Route::post('/applications/{id}/evaluate', [ApplicationController::class, 'evaluate']);
 
             // Onboarding
             Route::get('/applications/{applicationId}/onboarding', [OnboardingController::class, 'index']);

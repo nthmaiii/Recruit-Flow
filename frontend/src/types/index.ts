@@ -84,6 +84,15 @@ export interface Application {
   status_history?: StatusHistory[]
   interviews?: Interview[]
   notes?: ApplicationNote[]
+  ai_score: number | null
+  ai_evaluation: {
+    score: number
+    recommendation: 'strong_yes' | 'yes' | 'maybe' | 'no'
+    summary: string
+    strengths: string[]
+    weaknesses: string[]
+  } | null
+  ai_evaluated_at: string | null
   created_at: string
   updated_at: string
 }

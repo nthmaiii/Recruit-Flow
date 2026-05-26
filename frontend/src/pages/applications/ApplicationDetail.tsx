@@ -184,6 +184,21 @@ export default function ApplicationDetail() {
     },
   })
 
+  const evaluateAiMutation = useMutation({
+    mutationFn: () => applicationsApi.evaluate(Number(id)),
+    onSuccess: (res) => {
+      toast.success('Đánh giá AI hoàn tất!')
+      queryClient.setQueryData(['application', id], (old: any) => ({
+        ...old,
+        ai_score: res.data.ai_score,
+        ai_evaluation: res.data.ai_evaluation,
+        ai_evaluated_at: res.data.ai_evaluated_at,
+      }))
+      setActiveTab('info')
+    },
+    onError: (err: any) => toast.error(err.response?.data?.message || 'Không thể chạy đánh giá AI lúc này.'),
+  })
+
   if (isLoading || !app) return <div className="animate-pulse p-8 text-gray-400">{t('common.loading')}</div>
 
   // Tính các trạng thái hợp lệ dựa trên role VÀ trạng thái hiện tại
@@ -201,6 +216,39 @@ export default function ApplicationDetail() {
           {t('applications.backToList')}
         </button>
         <div className="flex gap-3">
+          <button
+            onClick={() => {
+              setActiveTab('info')
+              if (app?.ai_score == null && !evaluateAiMutation.isPending) {
+                evaluateAiMutation.mutate()
+              }
+            }}
+            className="btn-secondary flex items-center gap-1.5"
+            disabled={evaluateAiMutation.isPending}
+          >
+            {evaluateAiMutation.isPending ? (
+              <>
+                <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <span>Đang phân tích...</span>
+              </>
+            ) : (
+              <>
+                <span>🤖</span>
+                <span>Đánh giá AI</span>
+                {app?.ai_score != null && (
+                  <span className={`px-1.5 py-0.5 text-xs font-bold rounded ${
+                    app.ai_score >= 80 ? 'bg-green-100 text-green-700' :
+                    app.ai_score >= 60 ? 'bg-blue-100 text-blue-700' :
+                    app.ai_score >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`}>{app.ai_score}</span>
+                )}
+              </>
+            )}
+          </button>
           {isHR && (
             <button onClick={() => setShowEmailModal(true)} className="btn-secondary">{t('applications.sendEmail')}</button>
           )}
@@ -298,10 +346,122 @@ export default function ApplicationDetail() {
         ))}
       </div>
 
-      {/* Tab: Info */}
+      {/* Tab: Info - AI Evaluation */}
       {activeTab === 'info' && (
-        <div className="card text-sm text-gray-500">
-          {t('applications.tabInfo')}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold text-gray-900 dark:text-white">🤖 Đánh giá AI</h3>
+            {app.ai_score != null && (
+              <button
+                onClick={() => evaluateAiMutation.mutate()}
+                disabled={evaluateAiMutation.isPending}
+                className="btn-secondary text-sm"
+              >
+                {evaluateAiMutation.isPending ? 'Đang phân tích...' : '🔄 Chạy lại'}
+              </button>
+            )}
+          </div>
+
+          {evaluateAiMutation.isPending ? (
+            <div className="text-center py-10">
+              <svg className="animate-spin h-10 w-10 text-blue-500 mx-auto mb-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <p className="font-medium text-gray-700 dark:text-gray-200">AI đang phân tích hồ sơ...</p>
+              <p className="text-xs text-gray-400 mt-1">Thường mất 20–60 giây</p>
+            </div>
+          ) : app.ai_score == null ? (
+            <div className="text-center py-10">
+              <div className="text-5xl mb-4">📄</div>
+              <p className="text-gray-500 mb-4">Chưa có đánh giá AI cho hồ sơ này.</p>
+              <button onClick={() => evaluateAiMutation.mutate()} className="btn-primary">
+                ▶ Chạy đánh giá ngay
+              </button>
+            </div>
+          ) : (() => {
+            const ev = app.ai_evaluation as any
+            const score = app.ai_score
+            const radius = 42
+            const circ = 2 * Math.PI * radius
+            const offset = circ - (score / 100) * circ
+            const scoreColor = score >= 80 ? '#16a34a' : score >= 60 ? '#2563eb' : score >= 40 ? '#d97706' : '#dc2626'
+            const recMap: Record<string, { label: string; color: string }> = {
+              strong_yes: { label: 'Rất phù hợp',     color: 'bg-green-100 text-green-700' },
+              yes:        { label: 'Phù hợp',          color: 'bg-blue-100 text-blue-700' },
+              maybe:      { label: 'Có thể xem xét',   color: 'bg-yellow-100 text-yellow-700' },
+              no:         { label: 'Không phù hợp',    color: 'bg-red-100 text-red-700' },
+            }
+            const rec = recMap[ev?.recommendation] ?? { label: ev?.recommendation, color: 'bg-gray-100 text-gray-700' }
+            return (
+              <div className="space-y-5">
+                {/* Score + Recommendation */}
+                <div className="flex items-center gap-8">
+                  <div className="relative flex-shrink-0">
+                    <svg width="110" height="110" viewBox="0 0 100 100">
+                      <circle cx="50" cy="50" r={radius} fill="none" stroke="#e5e7eb" strokeWidth="10" />
+                      <circle
+                        cx="50" cy="50" r={radius} fill="none"
+                        stroke={scoreColor} strokeWidth="10"
+                        strokeDasharray={circ} strokeDashoffset={offset}
+                        strokeLinecap="round"
+                        transform="rotate(-90 50 50)"
+                        style={{ transition: 'stroke-dashoffset 0.5s ease' }}
+                      />
+                      <text x="50" y="54" textAnchor="middle" fontSize="22" fontWeight="700" fill={scoreColor}>{score}</text>
+                      <text x="50" y="68" textAnchor="middle" fontSize="10" fill="#9ca3af">/100</text>
+                    </svg>
+                  </div>
+                  <div className="space-y-2">
+                    <div className="text-xs text-gray-500 uppercase tracking-wide">Khuyến nghị</div>
+                    <span className={`inline-block px-3 py-1.5 rounded-full text-sm font-semibold ${rec.color}`}>{rec.label}</span>
+                    {app.ai_evaluated_at && (
+                      <div className="text-xs text-gray-400">
+                        Đánh giá lúc {format(new Date(app.ai_evaluated_at), 'dd/MM/yyyy HH:mm')}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Summary */}
+                {ev?.summary && (
+                  <div className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg text-sm text-gray-700 dark:text-gray-200 leading-relaxed">
+                    {ev.summary}
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Strengths */}
+                  {ev?.strengths?.length > 0 && (
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">✅ Điểm mạnh</div>
+                      <ul className="space-y-1.5">
+                        {ev.strengths.map((s: string, i: number) => (
+                          <li key={i} className="text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                            <span className="text-green-500 flex-shrink-0 mt-0.5">•</span> {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Weaknesses */}
+                  {ev?.weaknesses?.length > 0 && (
+                    <div>
+                      <div className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">⚠️ Cần lưu ý</div>
+                      <ul className="space-y-1.5">
+                        {ev.weaknesses.map((w: string, i: number) => (
+                          <li key={i} className="text-sm text-gray-600 dark:text-gray-300 flex items-start gap-2">
+                            <span className="text-orange-400 flex-shrink-0 mt-0.5">•</span> {w}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )
+          })()}
         </div>
       )}
 

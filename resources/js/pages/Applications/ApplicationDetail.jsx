@@ -26,9 +26,34 @@ export default function ApplicationDetail() {
 
     useEffect(() => { fetchApp(); }, [id]);
 
+    const handleDownloadCv = async () => {
+        try {
+            const res = await api.get(`/applications/${id}/cv`, { responseType: 'blob' });
+            const url = window.URL.createObjectURL(new Blob([res.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', app.cv_original_name || 'cv.pdf');
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch {
+            toast.error('Không thể tải CV');
+        }
+    };
+
+    const handleAiEvaluate = async () => {
+        try {
+            await api.post(`/applications/${id}/evaluate`);
+            toast.success('Đang chạy đánh giá AI, vui lòng làm mới sau vài giây');
+        } catch (err) {
+            toast.error(err.response?.data?.message || 'Lỗi khi chạy đánh giá AI');
+        }
+    };
+
     const handleChangeStatus = async () => {
         try {
-            await api.put(`/applications/${id}/status`, statusForm);
+            await api.post(`/applications/${id}/status`, statusForm);
             toast.success('Đã cập nhật trạng thái');
             setStatusModal(false);
             fetchApp();
@@ -103,16 +128,53 @@ export default function ApplicationDetail() {
                             <div>
                                 <label className="text-xs font-medium text-gray-500 uppercase">CV đính kèm</label>
                                 <div className="mt-2">
-                                    <a
-                                        href={`/storage/${app.cv_path}`}
-                                        target="_blank"
-                                        rel="noreferrer"
+                                    <button
+                                        onClick={handleDownloadCv}
                                         className="text-blue-600 text-sm hover:underline"
                                     >
                                         Tải xuống CV
-                                    </a>
+                                    </button>
                                 </div>
                             </div>
+                            {app.ai_evaluation && (
+                                <div className="border border-blue-100 rounded-lg p-4 bg-blue-50 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="text-xs font-medium text-blue-600 uppercase">🤖 Đánh giá AI</label>
+                                        <span className={`text-sm font-bold px-2 py-0.5 rounded-full ${
+                                            app.ai_score >= 80 ? 'bg-green-100 text-green-700' :
+                                            app.ai_score >= 60 ? 'bg-blue-100 text-blue-700' :
+                                            app.ai_score >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                                            'bg-red-100 text-red-700'
+                                        }`}>
+                                            {app.ai_score}/100
+                                        </span>
+                                    </div>
+                                    <p className="text-sm text-gray-700">{app.ai_evaluation.summary}</p>
+                                    {app.ai_evaluation.strengths?.length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-medium text-green-600 mb-1">Điểm mạnh:</p>
+                                            <ul className="list-disc list-inside space-y-0.5">
+                                                {app.ai_evaluation.strengths.map((s, i) => (
+                                                    <li key={i} className="text-sm text-gray-600">{s}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    {app.ai_evaluation.weaknesses?.length > 0 && (
+                                        <div>
+                                            <p className="text-xs font-medium text-red-500 mb-1">Cần cải thiện:</p>
+                                            <ul className="list-disc list-inside space-y-0.5">
+                                                {app.ai_evaluation.weaknesses.map((w, i) => (
+                                                    <li key={i} className="text-sm text-gray-600">{w}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                    <p className="text-xs text-gray-400">
+                                        Đánh giá lúc: {new Date(app.ai_evaluated_at).toLocaleString('vi-VN')}
+                                    </p>
+                                </div>
+                            )}
                             {app.tags?.length > 0 && (
                                 <div>
                                     <label className="text-xs font-medium text-gray-500 uppercase">Tags</label>
@@ -235,6 +297,12 @@ export default function ApplicationDetail() {
                                 Chuyển trạng thái
                             </button>
                         )}
+                        <button
+                            onClick={handleAiEvaluate}
+                            className="w-full btn-secondary text-sm border-blue-300 text-blue-600 hover:bg-blue-50"
+                        >
+                            🤖 Đánh giá AI
+                        </button>
                     </div>
 
                     <div className="card">

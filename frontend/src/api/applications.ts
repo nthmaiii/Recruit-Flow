@@ -37,4 +37,7 @@ export const applicationsApi = {
 
   candidateApplications: (email: string) =>
     client.get<Application[]>('/candidate/applications', { params: { email } }),
+
+  evaluate: (id: number) =>
+    client.post(`/applications/${id}/evaluate`, undefined, { timeout: 110000 }),
 }

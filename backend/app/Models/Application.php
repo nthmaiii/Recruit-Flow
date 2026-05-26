@@ -37,10 +37,12 @@ class Application extends Model
     protected $fillable = [
         'job_id', 'candidate_id', 'status', 'cv_path', 'cv_original_name',
         'cover_letter', 'rating', 'assigned_to', 'rejection_reason',
+        'ai_score', 'ai_evaluation', 'ai_evaluated_at',
     ];
 
     protected $casts = [
-        'rating' => 'decimal:1',
+        'rating'        => 'decimal:1',
+        'ai_evaluation' => 'array',
     ];
 
     public function job()
